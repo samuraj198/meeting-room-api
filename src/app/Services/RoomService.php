@@ -14,13 +14,7 @@ class RoomService
 
     public function getById(int $id): ?Room
     {
-        $room = Room::find($id);
-
-        if ($room == null) {
-            return null;
-        }
-
-        return $room;
+        return Room::find($id);
     }
 
     public function store(array $data): Room
