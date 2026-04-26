@@ -16,8 +16,8 @@ class AvailableRoomRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $startTime = request()->get('start_time');
-        $endTime = request()->get('end_time');
+        $startTime = request()->input('start_time');
+        $endTime = request()->input('end_time');
 
         if (!$startTime || !$endTime) {
             return;
@@ -25,7 +25,8 @@ class AvailableRoomRule implements ValidationRule
 
         $exists = Booking::where('room_id', $value)
             ->where('start_time', '<', $endTime)
-            ->where('end_time', '>', $startTime);
+            ->where('end_time', '>', $startTime)
+            ->exists();
 
         if ($exists) {
             $fail('Эта комната уже забронирована на выбранное время.');

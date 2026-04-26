@@ -41,8 +41,8 @@ class BookingService
                 'room_id' => $data['room_id'],
                 'start_time' => $data['start_time'],
                 'end_time' => $data['end_time'],
-                'purpose' => $data['purpose'],
-                'status' => $data['status'],
+                'purpose' => $data['purpose'] ?? null,
+                'status' => 'pending',
             ]);
 
             return $booking;

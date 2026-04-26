@@ -52,7 +52,7 @@ class BookingController extends Controller
             'success' => true,
             'message' => 'Вы успешно забронировали комнату',
             'data' => BookingResource::make($booking)
-        ]);
+        ], 201);
     }
 
     public function destroy(int $id): JsonResponse
