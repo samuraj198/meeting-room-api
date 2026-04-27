@@ -15,9 +15,9 @@ class BookingService
         return Booking::with('room')->get();
     }
 
-    public function getById(int $id): ?Booking
+    public function getById(int $id): Booking
     {
-        return Booking::with('room')->find($id);
+        return Booking::with('room')->findOrFail($id);
     }
 
     public function store(array $data, int $userId): Booking
@@ -49,14 +49,8 @@ class BookingService
         });
     }
 
-    public function destroy(int $id): ?bool
+    public function destroy(int $id): bool
     {
-        $booking = $this->getById($id);
-
-        if ($booking === null) {
-            return null;
-        }
-
-        return $booking->delete();
+        return $this->getById($id)->delete();
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\ModelNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
@@ -30,13 +31,6 @@ class BookingController extends Controller
     {
         $booking = $this->bookingService->getById($id);
 
-        if ($booking === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Бронь не найдена'
-            ], 404);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Получена бронь',
@@ -57,14 +51,7 @@ class BookingController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $check = $this->bookingService->destroy($id);
-
-        if ($check === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Бронь не найдена'
-            ], 404);
-        }
+        $this->bookingService->destroy($id);
 
         return response()->json(null, 204);
     }

@@ -31,13 +31,6 @@ class RoomController extends Controller
     {
         $room = $this->roomService->getById($id);
 
-        if ($room == null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Комната не найдена',
-            ], 404);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Получена комната по id',
@@ -60,13 +53,6 @@ class RoomController extends Controller
     {
         $updatedRoom = $this->roomService->update($id, $request->validated());
 
-        if ($updatedRoom == null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Комната не найдена',
-            ], 404);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Комната успешно обновлена',
@@ -76,14 +62,7 @@ class RoomController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $check = $this->roomService->destroy($id);
-
-        if ($check == null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Комната не найдена',
-            ], 404);
-        }
+        $this->roomService->destroy($id);
 
         return response()->json(null, 204);
     }
