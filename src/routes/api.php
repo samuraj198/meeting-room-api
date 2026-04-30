@@ -14,3 +14,6 @@ Route::apiResource('rooms', RoomController::class)
     ->parameters(['rooms' => 'id']);
 Route::apiResource('bookings', BookingController::class)
     ->parameters(['bookings' => 'id']);
+
+Route::patch('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+Route::get('/user/bookings', [BookingController::class, 'userBookings']);

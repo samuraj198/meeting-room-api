@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Exceptions\BookingAlreadyCancelledException;
 use App\Exceptions\RoomAlreadyBookedException;
 use App\Models\Booking;
 use App\Models\Room;
+use http\Client\Curl\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -12,12 +14,20 @@ class BookingService
 {
     public function getAll(): Collection
     {
-        return Booking::with('room')->get();
+        return Booking::with('room')->active()->latest()->get();
     }
 
     public function getById(int $id): Booking
     {
         return Booking::with('room')->findOrFail($id);
+    }
+
+    public function getUserBookings(int $userId): Collection
+    {
+        return Booking::with('room')
+            ->forUser($userId)
+            ->latest()
+            ->get();
     }
 
     public function store(array $data, int $userId): Booking
@@ -52,5 +62,18 @@ class BookingService
     public function destroy(int $id): bool
     {
         return $this->getById($id)->delete();
+    }
+
+    public function cancel(int $id): Booking
+    {
+        $booking = $this->getById($id);
+
+        if ($booking->status == 'cancelled') {
+            throw new BookingAlreadyCancelledException();
+        }
+
+        $booking->update(['status' => 'cancelled']);
+
+        return $booking;
     }
 }

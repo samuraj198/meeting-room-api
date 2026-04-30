@@ -1,4 +1,4 @@
-.PHONY: up down build artisan test
+.PHONY: up down build artisan test test-rooms test-bookings
 
 up:
 	docker-compose up -d
@@ -15,5 +15,10 @@ artisan:
 test:
 	docker-compose exec app php artisan test --testsuite=Feature
 
+test-rooms:
+	docker-compose exec app php artisan test tests/Feature/RoomControllerTest.php
+
+test-bookings:
+	docker-compose exec app php artisan test tests/Feature/BookingControllerTest.php
 %:
 	@:

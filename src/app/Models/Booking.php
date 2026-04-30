@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,5 +33,20 @@ class Booking extends Model
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function scopeActive($query): Builder
+    {
+        return $query->where('status', '!=', 'cancelled');
+    }
+
+    public function scopeUpcoming($query): Builder
+    {
+        return $query->where('start_time', '>', now());
+    }
+
+    public function scopeForUser($query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
     }
 }

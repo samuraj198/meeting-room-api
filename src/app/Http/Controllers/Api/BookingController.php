@@ -38,6 +38,19 @@ class BookingController extends Controller
         ]);
     }
 
+    public function userBookings(): JsonResponse
+    {
+        //Пока что берем id 1 пользователя
+        $bookings = $this->bookingService->getUserBookings(User::first()->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Получены брони зарегистрированного пользователя',
+            'count' => $bookings->count(),
+            'items' => BookingResource::collection($bookings)
+        ]);
+    }
+
     public function store(StoreBookingRequest $request): JsonResponse
     {
         $booking = $this->bookingService->store($request->validated(), User::first()->id);
@@ -54,5 +67,16 @@ class BookingController extends Controller
         $this->bookingService->destroy($id);
 
         return response()->json(null, 204);
+    }
+
+    public function cancel(int $id): JsonResponse
+    {
+        $booking = $this->bookingService->cancel($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Бронь отменена',
+            'data' => BookingResource::make($booking)
+        ]);
     }
 }
