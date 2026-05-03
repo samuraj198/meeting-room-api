@@ -40,6 +40,13 @@ class RoomController extends Controller
 
     public function store(StoreRoomRequest $request): JsonResponse
     {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'У пользователя нет доступа'
+            ], 403);
+        }
+
         $room = $this->roomService->store($request->validated());
 
         return response()->json([
@@ -51,6 +58,13 @@ class RoomController extends Controller
 
     public function update(int $id, UpdateRoomRequest $request): JsonResponse
     {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'У пользователя нет доступа'
+            ], 403);
+        }
+
         $updatedRoom = $this->roomService->update($id, $request->validated());
 
         return response()->json([
@@ -62,6 +76,13 @@ class RoomController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'У пользователя нет доступа'
+            ], 403);
+        }
+
         $this->roomService->destroy($id);
 
         return response()->json(null, 204);

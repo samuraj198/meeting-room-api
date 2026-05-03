@@ -17,6 +17,13 @@ class BookingController extends Controller
 
     public function index(): JsonResponse
     {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'У пользователя нет доступа'
+            ], 403);
+        }
+
         $bookings = $this->bookingService->getAll();
 
         return response()->json([
@@ -40,8 +47,7 @@ class BookingController extends Controller
 
     public function userBookings(): JsonResponse
     {
-        //Пока что берем id 1 пользователя
-        $bookings = $this->bookingService->getUserBookings(User::first()->id);
+        $bookings = $this->bookingService->getUserBookings(auth()->user()->id);
 
         return response()->json([
             'success' => true,
@@ -53,7 +59,7 @@ class BookingController extends Controller
 
     public function store(StoreBookingRequest $request): JsonResponse
     {
-        $booking = $this->bookingService->store($request->validated(), User::first()->id);
+        $booking = $this->bookingService->store($request->validated(), auth()->user()->id);
 
         return response()->json([
             'success' => true,

@@ -17,14 +17,18 @@ class BookingControllerTest extends TestCase
 
     public function test_create_booking()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $data = [
-            'user_id' => User::factory()->create()->id,
+            'user_id' => $user->id,
             'room_id' => Room::factory()->create()->id,
             'start_time' => '2026-05-08 09:19:35',
             'end_time' => '2026-05-08 09:20:35',
         ];
 
-        $response = $this->post('/api/bookings', $data);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->post('/api/bookings', $data);
 
         $this->assertDatabaseHas('bookings', $data);
 
@@ -46,6 +50,9 @@ class BookingControllerTest extends TestCase
 
     public function test_create_booking_for_booked_room()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $booking = Booking::factory()->create([
             'start_time' => '2026-05-08 09:00:00',
             'end_time' => '2026-05-08 10:00:00',
@@ -58,17 +65,30 @@ class BookingControllerTest extends TestCase
             'end_time' => '2026-05-08 10:30:00',
         ];
 
-        $response = $this->postJson('/api/bookings', $data);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/bookings', $data);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('room_id');
     }
 
-    public function test_get_list_of_bookings()
+    public function test_get_list_of_bookings_active_scope()
     {
-        $bookings = Booking::factory(10)->create();
+        $user = User::factory()->create([
+            'role' => 'admin'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
 
-        $response = $this->get('/api/bookings');
+        Booking::factory(3)->create([
+            'status' => 'pending'
+        ]);
+        Booking::factory(6)->create([
+            'status' => 'cancelled'
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->get('/api/bookings');
+        $response->assertJsonCount(3, 'items');
 
         $response->assertJsonStructure([
             'success',
@@ -91,9 +111,13 @@ class BookingControllerTest extends TestCase
 
     public function test_get_booking()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $bookings = Booking::factory(2)->create();
 
-        $response = $this->get('/api/bookings/' . $bookings[1]->id);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->get('/api/bookings/' . $bookings[1]->id);
 
         $response->assertJsonPath('data.id', $bookings[1]->id);
         $response->assertJsonStructure([
@@ -114,10 +138,14 @@ class BookingControllerTest extends TestCase
 
     public function test_destroy_booking()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $bookings = Booking::factory(2)->create();
         $this->assertDatabaseCount('bookings', 2);
 
-        $response = $this->delete('/api/bookings/' . $bookings[1]->id);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->delete('/api/bookings/' . $bookings[1]->id);
 
         $this->assertDatabaseCount('bookings', 1);
         $response->assertStatus(204);
@@ -125,11 +153,15 @@ class BookingControllerTest extends TestCase
 
     public function test_cancel_booking()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $booking = Booking::factory()->create([
             'status' => 'pending'
         ]);
 
-        $response = $this->patch('/api/bookings/' . $booking->id . '/cancel');
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patch('/api/bookings/' . $booking->id . '/cancel');
 
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,
@@ -153,11 +185,15 @@ class BookingControllerTest extends TestCase
 
     public function test_cancel_already_cancelled_booking()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $booking = Booking::factory()->create([
             'status' => 'cancelled'
         ]);
 
-        $response = $this->patch('/api/bookings/' . $booking->id . '/cancel');
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patch('/api/bookings/' . $booking->id . '/cancel');
 
         $response->assertJsonStructure([
             'success',
@@ -167,7 +203,11 @@ class BookingControllerTest extends TestCase
 
     public function test_cancel_nonexistent_booking()
     {
-        $response = $this->patch('/api/bookings/' . 999 . '/cancel');
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patch('/api/bookings/' . 999 . '/cancel');
 
         $response->assertJsonStructure([
             'success',
@@ -178,44 +218,15 @@ class BookingControllerTest extends TestCase
     public function test_get_user_bookings()
     {
         $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
 
         $one = Booking::factory(2)->create(['user_id' => $user->id]);
         $two = Booking::factory(3)->create(['user_id' => User::factory()->create()->id]);
 
-        $response = $this->get('/api/user/bookings');
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->get('/api/user/bookings');
 
         $response->assertJsonCount($one->count(), 'items');
-        $response->assertJsonStructure([
-            'success',
-            'message',
-            'count',
-            'items' => [
-                '*' => [
-                    'id',
-                    'user_id',
-                    'room',
-                    'start_time',
-                    'end_time',
-                    'status',
-                    'purpose',
-                    'created_at'
-                ]
-            ]
-        ])->assertStatus(200);
-    }
-
-    public function test_active_scope()
-    {
-        Booking::factory(3)->create([
-            'status' => 'pending'
-        ]);
-        Booking::factory(6)->create([
-            'status' => 'cancelled'
-        ]);
-
-        $response = $this->get('/api/bookings');
-
-        $response->assertJsonCount(3, 'items');
         $response->assertJsonStructure([
             'success',
             'message',
@@ -238,7 +249,11 @@ class BookingControllerTest extends TestCase
     #[DataProvider('invalidBookingDataProvider')]
     public function test_booking_validation_fails($invalidData, $expectedField)
     {
-        $response = $this->postJson('/api/bookings', $invalidData);
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/bookings', $invalidData);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors($expectedField);

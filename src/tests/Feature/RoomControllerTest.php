@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Room;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -16,10 +17,14 @@ class RoomControllerTest extends TestCase
 
     public function test_get_rooms_list()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $rooms = Room::factory(10)->create();
         $countActiveRooms = $rooms->where('is_active', true)->count();
 
-        $response = $this->get('/api/rooms');
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->get('/api/rooms');
 
         $response->assertJsonPath('count', $countActiveRooms);
         $response->assertJsonStructure([
@@ -42,9 +47,13 @@ class RoomControllerTest extends TestCase
 
     public function test_get_single_room()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $rooms = Room::factory(2)->create();
 
-        $response = $this->get('/api/rooms/' . $rooms[1]->id);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->get('/api/rooms/' . $rooms[1]->id);
 
         $response->assertJsonPath('data.id', $rooms[1]->id);
         $response->assertJsonStructure([
@@ -64,6 +73,11 @@ class RoomControllerTest extends TestCase
 
     public function test_create_room()
     {
+        $user = User::factory()->create([
+            'role' => 'admin'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
         $data = [
             'name' => 'Test Room',
             'capacity' => 10,
@@ -71,7 +85,8 @@ class RoomControllerTest extends TestCase
             'is_active' => true,
         ];
 
-        $response = $this->post('/api/rooms', $data);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->post('/api/rooms', $data);
 
         $this->assertDatabaseHas('rooms', $data);
         $response->assertJsonStructure([
@@ -91,6 +106,11 @@ class RoomControllerTest extends TestCase
 
     public function test_update_room()
     {
+        $user = User::factory()->create([
+            'role' => 'admin'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
         $room = Room::factory()->create();
         $this->assertDatabaseHas('rooms', [
             'name' => $room->name
@@ -101,7 +121,8 @@ class RoomControllerTest extends TestCase
             'is_active' => false,
         ];
 
-        $response = $this->put('/api/rooms/' . $room->id, $data);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->put('/api/rooms/' . $room->id, $data);
 
         $this->assertDatabaseHas('rooms', $data);
         $response->assertJsonStructure([
@@ -121,12 +142,18 @@ class RoomControllerTest extends TestCase
 
     public function test_delete_room()
     {
+        $user = User::factory()->create([
+            'role' => 'admin'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
         $room = Room::factory()->create();
         $this->assertDatabaseHas('rooms', [
             'name' => $room->name
         ]);
 
-        $response = $this->delete('/api/rooms/' . $room->id);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->delete('/api/rooms/' . $room->id);
         $this->assertDatabaseMissing('rooms', [
             'name' => $room->name
         ]);
@@ -134,10 +161,79 @@ class RoomControllerTest extends TestCase
         $response->assertStatus(204);
     }
 
+    public function test_non_admin_cannot_create_room()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $data = [
+            'name' => 'Test Room',
+            'capacity' => 10,
+            'description' => 'Test Room',
+            'is_active' => true,
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->post('/api/rooms', $data);
+
+        $response->assertJsonStructure([
+            'success',
+            'message'
+        ])->assertStatus(403);
+    }
+
+    public function test_non_admin_cannot_update_room()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $room = Room::factory()->create();
+        $data = [
+            'name' => 'Test update',
+            'capacity' => 10,
+            'description' => 'Test Room',
+            'is_active' => true,
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->put('/api/rooms/' . $room->id, $data);
+
+        $response->assertJsonStructure([
+            'success',
+            'message'
+        ])->assertStatus(403);
+    }
+
+    public function test_non_admin_cannot_delete_room()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $room = Room::factory()->create();
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->delete('/api/rooms/' . $room->id);
+
+        $response->assertJsonStructure([
+            'success',
+            'message'
+        ])->assertStatus(403);
+    }
+
     #[DataProvider('invalidRoomDataProvider')]
     public function test_room_validation_fails($invalidData, $expectedField)
     {
-        $response = $this->postJson('/api/rooms', $invalidData);
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/rooms', $invalidData);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors($expectedField);
@@ -175,9 +271,13 @@ class RoomControllerTest extends TestCase
 
     public function test_unique_name_room()
     {
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
         $room = Room::factory()->create();
 
-        $response = $this->postJson('/api/rooms', [
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/rooms', [
             'name' => $room->name,
             'capacity' => 1
         ]);
