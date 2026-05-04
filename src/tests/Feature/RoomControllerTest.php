@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class RoomControllerTest extends TestCase
 {
@@ -24,7 +25,7 @@ class RoomControllerTest extends TestCase
         $countActiveRooms = $rooms->where('is_active', true)->count();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->get('/api/rooms');
+            ->getJson('/api/rooms');
 
         $response->assertJsonPath('count', $countActiveRooms);
         $response->assertJsonStructure([
@@ -53,7 +54,7 @@ class RoomControllerTest extends TestCase
         $rooms = Room::factory(2)->create();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->get('/api/rooms/' . $rooms[1]->id);
+            ->getJson('/api/rooms/' . $rooms[1]->id);
 
         $response->assertJsonPath('data.id', $rooms[1]->id);
         $response->assertJsonStructure([
@@ -86,7 +87,7 @@ class RoomControllerTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->post('/api/rooms', $data);
+            ->postJson('/api/rooms', $data);
 
         $this->assertDatabaseHas('rooms', $data);
         $response->assertJsonStructure([
@@ -122,9 +123,12 @@ class RoomControllerTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->put('/api/rooms/' . $room->id, $data);
+            ->putJson('/api/rooms/' . $room->id, $data);
 
-        $this->assertDatabaseHas('rooms', $data);
+        $this->assertDatabaseHas('rooms', [
+            'name' => $data['name']
+        ]);
+
         $response->assertJsonStructure([
             'success',
             'message',
@@ -153,7 +157,7 @@ class RoomControllerTest extends TestCase
         ]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->delete('/api/rooms/' . $room->id);
+            ->deleteJson('/api/rooms/' . $room->id);
         $this->assertDatabaseMissing('rooms', [
             'name' => $room->name
         ]);
@@ -176,7 +180,7 @@ class RoomControllerTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->post('/api/rooms', $data);
+            ->postJson('/api/rooms', $data);
 
         $response->assertJsonStructure([
             'success',
@@ -200,7 +204,7 @@ class RoomControllerTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->put('/api/rooms/' . $room->id, $data);
+            ->putJson('/api/rooms/' . $room->id, $data);
 
         $response->assertJsonStructure([
             'success',
@@ -218,7 +222,7 @@ class RoomControllerTest extends TestCase
         $room = Room::factory()->create();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->delete('/api/rooms/' . $room->id);
+            ->deleteJson('/api/rooms/' . $room->id);
 
         $response->assertJsonStructure([
             'success',

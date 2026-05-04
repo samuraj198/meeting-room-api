@@ -11,8 +11,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('rooms', RoomController::class)
-        ->parameters(['rooms' => 'id']);
+    Route::apiResource('rooms', RoomController::class);
     Route::apiResource('bookings', BookingController::class)
         ->parameters(['bookings' => 'id']);
     Route::patch('/bookings/{id}/cancel', [BookingController::class, 'cancel']);

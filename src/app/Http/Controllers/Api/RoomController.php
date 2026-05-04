@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\RoomResource;
+use App\Models\Room;
+use App\Policies\RoomPolicy;
 use App\Services\RoomService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,10 +29,8 @@ class RoomController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Room $room): JsonResponse
     {
-        $room = $this->roomService->getById($id);
-
         return response()->json([
             'success' => true,
             'message' => 'Получена комната по id',
@@ -40,12 +40,7 @@ class RoomController extends Controller
 
     public function store(StoreRoomRequest $request): JsonResponse
     {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'У пользователя нет доступа'
-            ], 403);
-        }
+        $this->authorize('create', Room::class);
 
         $room = $this->roomService->store($request->validated());
 
@@ -56,16 +51,11 @@ class RoomController extends Controller
         ], 201);
     }
 
-    public function update(int $id, UpdateRoomRequest $request): JsonResponse
+    public function update(Room $room, UpdateRoomRequest $request): JsonResponse
     {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'У пользователя нет доступа'
-            ], 403);
-        }
+        $this->authorize('update', $room);
 
-        $updatedRoom = $this->roomService->update($id, $request->validated());
+        $updatedRoom = $this->roomService->update($room, $request->validated());
 
         return response()->json([
             'success' => true,
@@ -74,16 +64,11 @@ class RoomController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Room $room): JsonResponse
     {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'У пользователя нет доступа'
-            ], 403);
-        }
+        $this->authorize('delete', $room);
 
-        $this->roomService->destroy($id);
+        $this->roomService->destroy($room);
 
         return response()->json(null, 204);
     }

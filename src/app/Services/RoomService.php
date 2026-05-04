@@ -12,11 +12,6 @@ class RoomService
         return Room::where('is_active', true)->paginate(15);
     }
 
-    public function getById(int $id): Room
-    {
-        return Room::findOrFail($id);
-    }
-
     public function store(array $data): Room
     {
         $room = Room::create($data);
@@ -24,17 +19,15 @@ class RoomService
         return $room;
     }
 
-    public function update(int $id, array $data): Room
+    public function update(Room $room, array $data): Room
     {
-        $room = $this->getById($id);
-
         $room->update($data);
 
         return $room;
     }
 
-    public function destroy(int $id): bool
+    public function destroy(Room $room): bool
     {
-        return $this->getById($id)->delete();
+        return $room->delete();
     }
 }

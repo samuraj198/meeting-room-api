@@ -1,10 +1,13 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use \Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Http\JsonResponse;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (NotFoundHttpException $e, $request) {
+        $exceptions->render(function (NotFoundHttpException $e, $request): ?JsonResponse {
             if ($request->is('api/*')) {
 
                 $previous = $e->getPrevious();
@@ -40,6 +43,20 @@ return Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $message,
                 ], 404);
+            }
+
+            return null;
+        });
+        $exceptions->render(function (AccessDeniedHttpException $e, $request): ?JsonResponse {
+            if ($request->is('api/*')) {
+                $previous = $e->getPrevious();
+
+                if ($previous instanceof AuthorizationException) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'У вас не достаточно прав на это действие',
+                    ], 403);
+                }
             }
 
             return null;
