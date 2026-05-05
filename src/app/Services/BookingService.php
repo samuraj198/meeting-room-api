@@ -17,11 +17,6 @@ class BookingService
         return Booking::with('room')->active()->latest()->get();
     }
 
-    public function getById(int $id): Booking
-    {
-        return Booking::with('room')->findOrFail($id);
-    }
-
     public function getUserBookings(int $userId): Collection
     {
         return Booking::with('room')
@@ -59,15 +54,13 @@ class BookingService
         });
     }
 
-    public function destroy(int $id): bool
+    public function destroy(Booking $booking): bool
     {
-        return $this->getById($id)->delete();
+        return $booking->delete();
     }
 
-    public function cancel(int $id): Booking
+    public function cancel(Booking $booking): Booking
     {
-        $booking = $this->getById($id);
-
         if ($booking->status == 'cancelled') {
             throw new BookingAlreadyCancelledException();
         }

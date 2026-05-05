@@ -54,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 if ($previous instanceof AuthorizationException) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'У вас не достаточно прав на это действие',
+                        'message' => 'У вас недостаточно прав на это действие',
                     ], 403);
                 }
             }

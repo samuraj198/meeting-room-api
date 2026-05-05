@@ -28,7 +28,7 @@ class BookingControllerTest extends TestCase
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->post('/api/bookings', $data);
+            ->postJson('/api/bookings', $data);
 
         $this->assertDatabaseHas('bookings', $data);
 
@@ -87,7 +87,7 @@ class BookingControllerTest extends TestCase
         ]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->get('/api/bookings');
+            ->getJson('/api/bookings');
         $response->assertJsonCount(3, 'items');
 
         $response->assertJsonStructure([
@@ -114,10 +114,12 @@ class BookingControllerTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('token')->plainTextToken;
 
-        $bookings = Booking::factory(2)->create();
+        $bookings = Booking::factory(2)->create([
+            'user_id' => $user->id,
+        ]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->get('/api/bookings/' . $bookings[1]->id);
+            ->getJson('/api/bookings/' . $bookings[1]->id);
 
         $response->assertJsonPath('data.id', $bookings[1]->id);
         $response->assertJsonStructure([
@@ -141,11 +143,13 @@ class BookingControllerTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('token')->plainTextToken;
 
-        $bookings = Booking::factory(2)->create();
+        $bookings = Booking::factory(2)->create([
+            'user_id' => $user->id,
+        ]);
         $this->assertDatabaseCount('bookings', 2);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->delete('/api/bookings/' . $bookings[1]->id);
+            ->deleteJson('/api/bookings/' . $bookings[1]->id);
 
         $this->assertDatabaseCount('bookings', 1);
         $response->assertStatus(204);
@@ -157,11 +161,12 @@ class BookingControllerTest extends TestCase
         $token = $user->createToken('token')->plainTextToken;
 
         $booking = Booking::factory()->create([
-            'status' => 'pending'
+            'status' => 'pending',
+            'user_id' => $user->id,
         ]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->patch('/api/bookings/' . $booking->id . '/cancel');
+            ->patchJson('/api/bookings/' . $booking->id . '/cancel');
 
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,
@@ -189,11 +194,12 @@ class BookingControllerTest extends TestCase
         $token = $user->createToken('token')->plainTextToken;
 
         $booking = Booking::factory()->create([
-            'status' => 'cancelled'
+            'status' => 'cancelled',
+            'user_id' => $user->id,
         ]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->patch('/api/bookings/' . $booking->id . '/cancel');
+            ->patchJson('/api/bookings/' . $booking->id . '/cancel');
 
         $response->assertJsonStructure([
             'success',
@@ -207,7 +213,7 @@ class BookingControllerTest extends TestCase
         $token = $user->createToken('token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->patch('/api/bookings/' . 999 . '/cancel');
+            ->patchJson('/api/bookings/' . 999 . '/cancel');
 
         $response->assertJsonStructure([
             'success',
@@ -224,7 +230,7 @@ class BookingControllerTest extends TestCase
         $two = Booking::factory(3)->create(['user_id' => User::factory()->create()->id]);
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
-            ->get('/api/user/bookings');
+            ->getJson('/api/user/bookings');
 
         $response->assertJsonCount($one->count(), 'items');
         $response->assertJsonStructure([
@@ -244,6 +250,164 @@ class BookingControllerTest extends TestCase
                 ]
             ]
         ])->assertStatus(200);
+    }
+
+    public function test_authorized_user_see_only_own_bookings()
+    {
+        $users = User::factory(2)->create([
+            'role' => 'user'
+        ]);
+        Booking::factory(2)->create([
+            'user_id' => $users[0]->id,
+        ]);
+        Booking::factory(3)->create([
+            'user_id' => $users[1]->id,
+        ]);
+
+        $token = $users[0]->createToken('token')->plainTextToken;
+
+        $this->assertDatabaseCount('bookings', 5);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/user/bookings');
+
+        $response->assertJsonCount(2, 'items');
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'count',
+            'items' => [
+                '*' => [
+                    'id',
+                    'user_id',
+                    'room',
+                    'start_time',
+                    'end_time',
+                    'status',
+                    'purpose',
+                    'created_at'
+                ]
+            ]
+        ])->assertStatus(200);
+    }
+
+    public function test_admin_see_all_bookings()
+    {
+        Booking::factory(5)->create([
+            'status' => 'pending'
+        ]);
+        $this->assertDatabaseCount('bookings', 5);
+
+        $admin = User::factory()->create([
+            'role' => 'admin'
+        ]);
+        $token = $admin->createToken('token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/bookings');
+
+        $response->assertJsonCount(5, 'items');
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'count',
+            'items' => [
+                '*' => [
+                    'id',
+                    'user_id',
+                    'room',
+                    'start_time',
+                    'end_time',
+                    'status',
+                    'purpose',
+                    'created_at'
+                ]
+            ]
+        ])->assertStatus(200);
+    }
+
+    public function test_authorized_user_cannot_see_all_bookings()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        Booking::factory(5)->create([
+            'status' => 'pending'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/bookings');
+
+        $response->assertJsonStructure([
+            'success',
+            'message',
+        ])->assertStatus(403);
+    }
+
+    public function test_user_cannot_cancel_another_user_booking()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+        $otherUser = User::factory()->create();
+        $bookings = Booking::factory(3)->create([
+            'user_id' => $otherUser->id,
+            'status' => 'pending'
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson('/api/bookings/' . $bookings[0]->id . '/cancel');
+
+        $response->assertJsonStructure([
+            'success',
+            'message',
+        ])->assertStatus(403);
+    }
+
+    public function test_authorized_user_cannot_destroy_another_user_booking()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $otherUser = User::factory()->create();
+        $bookings = Booking::factory(3)->create([
+            'user_id' => $otherUser->id,
+            'status' => 'pending'
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->deleteJson('/api/bookings/' . $bookings[0]->id);
+
+        $response->assertJsonStructure([
+            'success',
+            'message',
+        ])->assertStatus(403);
+    }
+
+    public function test_authorized_user_cannot_view_another_user_one_booking()
+    {
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $otherUser = User::factory()->create();
+        $bookings = Booking::factory(3)->create([
+            'user_id' => $otherUser->id,
+            'status' => 'pending'
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/bookings/' . $bookings[0]->id);
+
+        $response->assertJsonStructure([
+            'success',
+            'message',
+        ])->assertStatus(403);
     }
 
     #[DataProvider('invalidBookingDataProvider')]

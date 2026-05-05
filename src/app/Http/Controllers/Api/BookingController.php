@@ -6,8 +6,10 @@ use App\Exceptions\ModelNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
+use App\Models\Booking;
 use App\Models\User;
 use App\Services\BookingService;
+use Doctrine\Inflector\Rules\NorwegianBokmal\Inflectible;
 use Illuminate\Http\JsonResponse;
 
 class BookingController extends Controller
@@ -17,12 +19,7 @@ class BookingController extends Controller
 
     public function index(): JsonResponse
     {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'У пользователя нет доступа'
-            ], 403);
-        }
+        $this->authorize('viewAny', Booking::class);
 
         $bookings = $this->bookingService->getAll();
 
@@ -34,9 +31,9 @@ class BookingController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Booking $booking): JsonResponse
     {
-        $booking = $this->bookingService->getById($id);
+        $this->authorize('view', $booking);
 
         return response()->json([
             'success' => true,
@@ -68,16 +65,20 @@ class BookingController extends Controller
         ], 201);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Booking $booking): JsonResponse
     {
-        $this->bookingService->destroy($id);
+        $this->authorize('delete', $booking);
+
+        $this->bookingService->destroy($booking);
 
         return response()->json(null, 204);
     }
 
-    public function cancel(int $id): JsonResponse
+    public function cancel(Booking $booking): JsonResponse
     {
-        $booking = $this->bookingService->cancel($id);
+        $this->authorize('cancel', $booking);
+
+        $booking = $this->bookingService->cancel($booking);
 
         return response()->json([
             'success' => true,
