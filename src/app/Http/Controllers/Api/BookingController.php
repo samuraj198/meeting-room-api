@@ -56,7 +56,10 @@ class BookingController extends Controller
 
     public function store(StoreBookingRequest $request): JsonResponse
     {
-        $booking = $this->bookingService->store($request->validated(), auth()->user()->id);
+        $booking = $this->bookingService->store($request->validated(),
+                                                $request->header('X-Timezone',
+                                                    config('app.timezone')),
+                                                auth()->user()->id);
 
         return response()->json([
             'success' => true,

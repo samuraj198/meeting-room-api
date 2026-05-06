@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\BookingAlreadyCancelledException;
 use App\Exceptions\RoomAlreadyBookedException;
+use App\Jobs\SendBookingConfirmation;
+use App\Jobs\SendBookingReminder;
 use App\Models\Booking;
 use App\Models\Room;
+use Carbon\Carbon;
 use http\Client\Curl\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +28,9 @@ class BookingService
             ->get();
     }
 
-    public function store(array $data, int $userId): Booking
+    public function store(array $data, string $timezone,int $userId): Booking
     {
-        return DB::transaction(function () use ($data, $userId) {
+        return DB::transaction(function () use ($data, $timezone, $userId) {
             $room = Room::where('id', $data['room_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -44,11 +47,19 @@ class BookingService
             $booking = Booking::create([
                 'user_id' => $userId,
                 'room_id' => $data['room_id'],
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
+                'start_time' => Carbon::parse($data['start_time'], $timezone)->utc(),
+                'end_time' => Carbon::parse($data['end_time'], $timezone)->utc(),
                 'purpose' => $data['purpose'] ?? null,
                 'status' => 'pending',
             ]);
+
+            SendBookingConfirmation::dispatch($booking);
+
+            $reminderTime = $booking->start_time->copy()->subMinutes(15);
+
+            if ($reminderTime->gt(now())) {
+                SendBookingReminder::dispatch($booking)->delay($reminderTime);
+            }
 
             return $booking;
         });

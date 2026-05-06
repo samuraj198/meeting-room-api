@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendBookingConfirmation;
+use App\Jobs\SendBookingReminder;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -408,6 +410,66 @@ class BookingControllerTest extends TestCase
             'success',
             'message',
         ])->assertStatus(403);
+    }
+
+    public function test_booking_confirmation_job_dispatched_on_store()
+    {
+        Queue::fake();
+
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+        $data = Booking::factory()->make([
+            'user_id' => $user->id,
+        ])->toArray();
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/bookings', $data);
+
+        Queue::assertPushed(SendBookingConfirmation::class);
+    }
+
+    public function test_booking_reminder_job_dispatched_with_delay()
+    {
+        Queue::fake();
+
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $data = Booking::factory()->make([
+            'user_id' => $user->id,
+            'start_time' => now()->addMinutes(35),
+            'end_time' => now()->addMinutes(50),
+        ])->toArray();
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/bookings', $data);
+
+        Queue::assertPushed(SendBookingReminder::class);
+    }
+
+    public function test_booking_reminder_job_not_dispatched_with_delay()
+    {
+        Queue::fake();
+
+        $user = User::factory()->create([
+            'role' => 'user'
+        ]);
+        $token = $user->createToken('token')->plainTextToken;
+
+        $data = Booking::factory()->make([
+            'user_id' => $user->id,
+            'start_time' => now()->addMinutes(10),
+            'end_time' => now()->addMinutes(30),
+        ])->toArray();
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/bookings', $data);
+
+        Queue::assertNotPushed(SendBookingReminder::class);
     }
 
     #[DataProvider('invalidBookingDataProvider')]
