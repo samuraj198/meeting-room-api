@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
+use App\Events\BookingCreated;
 use App\Exceptions\BookingAlreadyCancelledException;
 use App\Exceptions\RoomAlreadyBookedException;
-use App\Jobs\SendBookingConfirmation;
 use App\Jobs\SendBookingReminder;
 use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
-use http\Client\Curl\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -53,7 +52,7 @@ class BookingService
                 'status' => 'pending',
             ]);
 
-            SendBookingConfirmation::dispatch($booking);
+            event(new BookingCreated($booking));
 
             $reminderTime = $booking->start_time->copy()->subMinutes(15);
 
