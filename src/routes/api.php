@@ -12,7 +12,9 @@ Route::get('/user', function (Request $request) {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('rooms', RoomController::class);
+    Route::get('/rooms/available', [RoomController::class, 'getAvailableRooms']);
     Route::apiResource('bookings', BookingController::class);
+
     Route::patch('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
     Route::get('/user/bookings', [BookingController::class, 'userBookings']);
 

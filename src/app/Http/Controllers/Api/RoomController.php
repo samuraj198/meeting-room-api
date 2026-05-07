@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\GetAvailableRoomRequest;
 use App\Http\Requests\StoreRoomRequest;
 use App\Http\Requests\UpdateRoomRequest;
 use App\Http\Resources\RoomResource;
@@ -17,13 +18,28 @@ class RoomController extends Controller
     public function __construct(private RoomService $roomService)
     {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $rooms = $this->roomService->getActiveRooms();
+        $page = $request->input('page', 1);
+        $rooms = $this->roomService->getActiveRooms($page);
 
         return response()->json([
             'success' => true,
             'message' => 'Список активных комнат',
+            'count' => $rooms->count(),
+            'items' => RoomResource::collection($rooms)
+        ]);
+    }
+
+    public function getAvailableRooms(GetAvailableRoomRequest $request): JsonResponse
+    {
+        $rooms = $this->roomService->getAvailableRooms($request->date,
+                                                        $request->start_time,
+                                                        $request->end_time);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Список свободных комнат',
             'count' => $rooms->count(),
             'items' => RoomResource::collection($rooms)
         ]);

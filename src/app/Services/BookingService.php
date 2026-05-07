@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class BookingService
@@ -59,6 +60,8 @@ class BookingService
             if ($reminderTime->gt(now())) {
                 SendBookingReminder::dispatch($booking)->delay($reminderTime);
             }
+
+            Cache::tags(['rooms.available'])->flush();
 
             return $booking;
         });

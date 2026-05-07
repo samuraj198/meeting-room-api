@@ -4,13 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Room;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Illuminate\Auth\Access\AuthorizationException;
 
 class RoomControllerTest extends TestCase
 {
@@ -228,6 +226,28 @@ class RoomControllerTest extends TestCase
             'success',
             'message'
         ])->assertStatus(403);
+    }
+
+    public function test_active_rooms_are_cached()
+    {
+        DB::enableQueryLog();
+
+        $user = User::factory()->create();
+        $token = $user->createToken('token')->plainTextToken;
+
+        Room::factory(10)->create([
+            'is_active' => 'true'
+        ]);
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('api/rooms');
+        $firstQueryCount = count(DB::getQueryLog());
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('api/rooms');
+        $secondQueryCount = count(DB::getQueryLog());
+
+        $this->assertEquals($firstQueryCount, $secondQueryCount);
     }
 
     #[DataProvider('invalidRoomDataProvider')]
