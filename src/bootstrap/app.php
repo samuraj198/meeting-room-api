@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Auth\Access\AuthorizationException;
+use \Illuminate\Auth\AuthenticationException;
+use \Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, $request): ?JsonResponse {
-            if ($request->is('api/*')) {
+            if ($request->is('api/*') && !$request->is('docs/*') && !$request->is('api/docs*')) {
 
                 $previous = $e->getPrevious();
 
@@ -57,6 +59,25 @@ return Application::configure(basePath: dirname(__DIR__))
                         'message' => 'У вас недостаточно прав на это действие',
                     ], 403);
                 }
+
+                if ($previous instanceof AuthenticationException) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Вы не авторизованы',
+                    ], 401);
+                }
+            }
+
+            return null;
+        });
+        $exceptions->render(function (ValidationException $e, $request): ?JsonResponse {
+            if ($request->is('api/*')) {
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $e->errors()
+                ], 422);
             }
 
             return null;
