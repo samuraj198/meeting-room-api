@@ -1,0 +1,185 @@
+openapi: 3.0.3
+info:
+  title: Meeting Room API
+  description: Meeting Room API
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/api'
+paths:
+  /register:
+    post:
+      summary: "Register User"
+      tags: ["Auth"]
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+      responses:
+        '200':
+          description: "User registered successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Пользователь успешно зарегистрирован"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                        example: "1|hdsajhdjkasd"
+        '422':
+          description: "Validation exception"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Ошибка валидации"
+                  errors:
+                    type: object
+                    properties:
+                      field:
+                        type: array
+                        example: ['Ошибка в поле field']
+  /login:
+    post:
+      summary: "Login user"
+      tags: ['Auth']
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        '200':
+          description: "User logged in successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Пользователь успешно авторизовался"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                        example: "1|hdsajhdjkasd"
+        '401':
+          description: "Invalid login attempt"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Неверная попытка входа"
+        '422':
+          description: "Validation exception"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Ошибка валидации"
+  /logout:
+    post:
+      summary: "User logout"
+      tags: ['Auth']
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: "User logged out successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Пользователь успешно вышел из аккаунта"
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: 'Enter token in format (<token>)'
+  schemas:
+    User:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Ivan Ivanov"
+        role:
+          type: string
+          example: "User"
+        email:
+          type: string
+          example: "example@example.com"
+    RegisterUser:
+      properties:
+        name:
+          type: string
+          example: "Ivan Ivanov"
+        email:
+          type: string
+          example: "example@example.com"
+        password:
+          type: string
+          example: "password"
+        password_confirmation:
+          type: string
+          example: "password"
+    LoginUser:
+      properties:
+        email:
+          type: string
+          example: "example@example.com"
+        password:
+          type: string
+          example: "password"

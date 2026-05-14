@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Exceptions\InvalidUserCredentialsException;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserService
 {
@@ -21,11 +23,11 @@ class UserService
 
     public function login(array $data): array
     {
-        if (!auth()->attempt($data)) {
+        if (!Auth::attempt($data)) {
             throw new InvalidUserCredentialsException();
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
         $token = $user->createToken('token')->plainTextToken;
 
         return [
@@ -36,6 +38,10 @@ class UserService
 
     public function logout(): void
     {
-        auth()->user()->currentAccessToken()->delete();
+        $user = Auth::user();
+
+        if ($user && $user->currentAccessToken() instanceof PersonalAccessToken) {
+            $user->currentAccessToken()->delete();
+        }
     }
 }

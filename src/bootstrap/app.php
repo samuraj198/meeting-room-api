@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->alias([
+            'checkAuth' => \App\Http\Middleware\AuthCheckMiddleware::class
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (NotFoundHttpException $e, $request): ?JsonResponse {
@@ -49,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+
         $exceptions->render(function (AccessDeniedHttpException $e, $request): ?JsonResponse {
             if ($request->is('api/*')) {
                 $previous = $e->getPrevious();
@@ -59,17 +63,11 @@ return Application::configure(basePath: dirname(__DIR__))
                         'message' => 'У вас недостаточно прав на это действие',
                     ], 403);
                 }
-
-                if ($previous instanceof AuthenticationException) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Вы не авторизованы',
-                    ], 401);
-                }
             }
 
             return null;
         });
+
         $exceptions->render(function (ValidationException $e, $request): ?JsonResponse {
             if ($request->is('api/*')) {
 
@@ -78,6 +76,17 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Ошибка валидации',
                     'errors' => $e->errors()
                 ], 422);
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (AuthenticationException $e, $request): ?JsonResponse {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Вы не авторизованы',
+                ], 401);
             }
 
             return null;
