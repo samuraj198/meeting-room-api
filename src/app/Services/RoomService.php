@@ -2,20 +2,28 @@
 
 namespace App\Services;
 
-use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
-use Ramsey\Collection\Collection;
 
 class RoomService
 {
-    public function getActiveRooms(int $page): LengthAwarePaginator
+    public function getActiveRooms(int $page): array
     {
-        return Cache::tags(['rooms'])
-            ->remember('rooms.active.page.' . $page, 3600, function () use ($page) {
-                return Room::where('is_active', true)->paginate(15, ['*'], 'page', $page);
+        $cacheKey = 'rooms.active.page.' . $page;
+
+        return Cache::tags(['rooms.active'])
+            ->remember($cacheKey, 3600, function () use ($page) {
+                $paginator = Room::where('is_active', true)->paginate(15, ['*'], 'page', $page);
+
+                return [
+                    'items' =>  collect($paginator->items())->toArray(),
+                    'total' => $paginator->total(),
+                    'per_page' => $paginator->perPage(),
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                ];
             });
     }
 
@@ -30,8 +38,9 @@ class RoomService
             function () use ($startDateTime, $endDateTime) {
                 return Room::where('is_active', true)
                     ->whereDoesntHave('bookings', function ($query) use ($startDateTime, $endDateTime) {
-                        $query->where('start_time', '<', $endDateTime)
-                        ->where('end_time', '>', $startDateTime);
+                        $query->where('status', '!=', 'cancelled')
+                            ->where('start_time', '<', $endDateTime)
+                            ->where('end_time', '>', $startDateTime);
                     })->get();
             });
     }

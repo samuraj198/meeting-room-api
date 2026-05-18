@@ -20,14 +20,26 @@ class RoomController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $page = $request->input('page', 1);
+        $page = (int) $request->input('page', 1);
         $rooms = $this->roomService->getActiveRooms($page);
+
+        if ($page > $rooms['last_page'] && $rooms['last_page'] > 0) {
+            $rooms = $this->roomService->getActiveRooms($rooms['last_page']);
+        }
+
+        $items = Room::hydrate($rooms['items']);
 
         return response()->json([
             'success' => true,
             'message' => 'Список активных комнат',
-            'count' => $rooms->count(),
-            'items' => RoomResource::collection($rooms)
+            'count' => count($rooms['items']),
+            'items' => RoomResource::collection($items),
+            'pagination' => [
+                'total' => $rooms['total'],
+                'per_page' => $rooms['per_page'],
+                'current_page' => $rooms['current_page'],
+                'last_page' => $rooms['last_page'],
+            ]
         ]);
     }
 

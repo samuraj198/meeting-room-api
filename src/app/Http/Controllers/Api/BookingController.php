@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\ModelNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
-use App\Models\User;
 use App\Services\BookingService;
-use Doctrine\Inflector\Rules\NorwegianBokmal\Inflectible;
 use Illuminate\Http\JsonResponse;
 
 class BookingController extends Controller

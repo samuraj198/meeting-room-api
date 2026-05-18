@@ -19,8 +19,10 @@ class BookingFactory extends Factory
      */
     public function definition(): array
     {
-        $start = $this->faker->dateTimeBetween('-1 month', '+1 month');
-        $end = (clone $start)->modify('+' . $this->faker->numberBetween(1, 3) . ' hours');
+        $start = now()->addDays(random_int(1, 4))->setHour(random_int(9, 18))
+            ->setMinute(0)
+            ->setSecond(0);
+        $end = $start->copy()->addHours($this->faker->numberBetween(1, 3));
 
         return [
             'user_id' => User::factory(),

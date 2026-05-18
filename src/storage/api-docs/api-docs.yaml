@@ -9,15 +9,14 @@ paths:
   /register:
     post:
       summary: "Register User"
-      tags: ["Auth"]
-      security:
-        - sanctum: []
+      tags:
+        - User
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterUser'
+              $ref: '#/components/schemas/UserRegister'
       responses:
         '200':
           description: "User registered successfully"
@@ -40,8 +39,8 @@ paths:
                       token:
                         type: string
                         example: "1|hdsajhdjkasd"
-        '422':
-          description: "Validation exception"
+        '400':
+          description: "User already logged in"
           content:
             application/json:
               schema:
@@ -52,25 +51,20 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: "Ошибка валидации"
-                  errors:
-                    type: object
-                    properties:
-                      field:
-                        type: array
-                        example: ['Ошибка в поле field']
+                    example: "Вы уже авторизованы"
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /login:
     post:
       summary: "Login user"
-      tags: ['Auth']
-      security:
-        - sanctum: []
+      tags:
+        - User
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginUser'
+              $ref: '#/components/schemas/UserLogin'
       responses:
         '200':
           description: "User logged in successfully"
@@ -93,36 +87,28 @@ paths:
                       token:
                         type: string
                         example: "1|hdsajhdjkasd"
+        '400':
+          description: "User already logged in"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Вы уже авторизованы"
         '401':
-          description: "Invalid login attempt"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "Неверная попытка входа"
+          $ref: '#/components/responses/Unauthorized'
         '422':
-          description: "Validation exception"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "Ошибка валидации"
+          $ref: '#/components/responses/ValidationError'
   /logout:
     post:
       summary: "User logout"
-      tags: ['Auth']
+      tags:
+        - User
       security:
         - sanctum: []
       responses:
@@ -139,13 +125,514 @@ paths:
                   message:
                     type: string
                     example: "Пользователь успешно вышел из аккаунта"
-
+  /rooms:
+    get:
+      summary: "Get active rooms"
+      tags:
+        - Room
+      security:
+        - sanctum: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: "Page number (default 1)"
+          schema:
+            type: integer
+            default: 1
+            example: 1
+      responses:
+        '200':
+          description: "Active rooms gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Список активных комнат"
+                  count:
+                    type: integer
+                    example: 15
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Room'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 100
+                      per_page:
+                        type: integer
+                        example: 15
+                      current_page:
+                        type: integer
+                        example: 1
+                      last_page:
+                        type: integer
+                        example: 10
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: "Create room"
+      tags:
+        - Room
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomStore'
+      responses:
+        '200':
+          description: "Room created successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Комната успешно создана"
+                  data:
+                    $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /rooms/available:
+    get:
+      summary: "Get only available rooms"
+      tags:
+        - Room
+      security:
+        - sanctum: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Booking date (Y-m-d)
+          schema:
+            type: string
+            format: date
+            example: "2026-05-20"
+        - name: start_time
+          in: query
+          required: true
+          description: Booking start_time (H:i:s)
+          schema:
+            type: string
+            format: time
+            example: "10:00:00"
+        - name: end_time
+          in: query
+          required: true
+          description: Booking start_time (H:i:s)
+          schema:
+            type: string
+            format: time
+            example: "12:00:00"
+      responses:
+        '200':
+          description: "Available rooms gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Список свободных комнат"
+                  count:
+                    type: integer
+                    example: 12
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /rooms/{room}:
+    get:
+      summary: "Get 1 room"
+      security:
+        - sanctum: []
+      tags:
+        - Room
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: "1 room gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Получена комната по id"
+                  data:
+                    $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+    patch:
+      summary: "Update 1 room"
+      tags:
+        - Room
+      security:
+        - sanctum: []
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomStore'
+      responses:
+        '200':
+          description: "Room updated successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Комната успешно обновлена"
+                  data:
+                    $ref: '#/components/schemas/Room'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: "Delete 1 room"
+      tags:
+        - Room
+      security:
+        - sanctum: []
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '204':
+          description: "Room deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+  /bookings:
+    get:
+      summary: "Get all bookings (for admins)"
+      tags:
+        - Booking
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: "List of bookings gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Получен список бронирований"
+                  count:
+                    type: integer
+                    example: 1
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: "Create booking"
+      tags:
+        - Booking
+      security:
+        - sanctum: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingStore'
+      responses:
+        '200':
+          description: "Booking created successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Вы успешно забронировали комнату"
+                  data:
+                    $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /bookings/{booking}:
+    get:
+      summary: "Get 1 booking"
+      security:
+        - sanctum: []
+      tags:
+        - Booking
+      parameters:
+        - name: booking
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: "Booking gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Получена бронь"
+                  data:
+                    $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+    delete:
+      summary: "Delete 1 booking"
+      security:
+        - sanctum: []
+      tags:
+        - Booking
+      parameters:
+        - name: booking
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '204':
+          description: "Room deleted successfully"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+  /bookings/{booking}/cancel:
+    patch:
+      summary: "Cancel 1 booking"
+      security:
+        - sanctum: []
+      tags:
+        - Booking
+      parameters:
+        - name: booking
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: "Booking cancelled successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Бронь отменена"
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/Booking'
+                      - type: object
+                        properties:
+                          status:
+                            type: string
+                            example: "cancelled"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/modelNotFound'
+        '409':
+          description: "Booking already cancelled"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Бронь уже отменена"
+  /user/bookings:
+    get:
+      summary: "Get bookings only for authorized user"
+      tags:
+        - Booking
+      security:
+        - sanctum: []
+      responses:
+        '200':
+          description: "Bookings for authorized user gotten successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Получены брони зарегистрированного пользователя"
+                  count:
+                    type: integer
+                    example: 1
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 components:
   securitySchemes:
     sanctum:
       type: http
       scheme: bearer
-      description: 'Enter token in format (<token>)'
+      description: 'Enter only token without "Bearer"'
+  responses:
+    modelNotFound:
+      description: "Room not found"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Комната не найдена"
+    Forbidden:
+      description: "Forbidden"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "У вас недостаточно прав на это действие"
+    Unauthorized:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Вы не авторизованы"
+    ValidationError:
+      description: "Validation exception"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "Ошибка валидации"
+              errors:
+                type: object
+                properties:
+                  field:
+                    type: array
+                    example: [ 'Ошибка в поле field' ]
   schemas:
     User:
       properties:
@@ -161,7 +648,7 @@ components:
         email:
           type: string
           example: "example@example.com"
-    RegisterUser:
+    UserRegister:
       properties:
         name:
           type: string
@@ -175,7 +662,7 @@ components:
         password_confirmation:
           type: string
           example: "password"
-    LoginUser:
+    UserLogin:
       properties:
         email:
           type: string
@@ -183,3 +670,100 @@ components:
         password:
           type: string
           example: "password"
+    Room:
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Room for games"
+        capacity:
+          type: integer
+          example: 20
+        description:
+          type: string
+          example: "It's room for practice"
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+    RoomStore:
+      properties:
+        name:
+          type: string
+          example: "Room for games"
+        capacity:
+          type: integer
+          example: 20
+        description:
+          type: string
+          example: "It's room for practice"
+        is_active:
+          type: boolean
+          example: true
+    RoomUpdate:
+      properties:
+        name:
+          type: string
+          example: "Room for games (updated)"
+        capacity:
+          type: integer
+          example: 25
+        description:
+          type: string
+          example: "It's room for practice"
+        is_active:
+          type: boolean
+          example: true
+    Booking:
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        room:
+          $ref: '#/components/schemas/Room'
+        start_time:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+        status:
+          type: string
+          example: "pending"
+        purpose:
+          type: string
+          example: "Text"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+    BookingStore:
+      properties:
+        room_id:
+          type: integer
+          example: 1
+        start_time:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+        end_time:
+          type: string
+          format: date-time
+          example: "2026-05-10T12:34:56.000000Z"
+        purpose:
+          type: string
+          example: "Text"

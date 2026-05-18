@@ -8,6 +8,7 @@ use App\Listeners\SendBookingConfirmationNotification;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -24,17 +25,18 @@ class BookingControllerTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('token')->plainTextToken;
 
-        $data = [
+        $data = Booking::factory()->make([
             'user_id' => $user->id,
-            'room_id' => Room::factory()->create()->id,
-            'start_time' => '2026-05-08 09:19:35',
-            'end_time' => '2026-05-08 09:20:35',
-        ];
+            'status' => 'pending'
+        ])->toArray();
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->postJson('/api/bookings', $data);
 
-        $this->assertDatabaseHas('bookings', $data);
+        $this->assertDatabaseHas('bookings', array_merge($data, [
+            'start_time' => date('Y-m-d H:i:s', strtotime($data['start_time'])),
+            'end_time' => date('Y-m-d H:i:s', strtotime($data['end_time'])),
+        ]));
 
         $response->assertJsonStructure([
             'success',

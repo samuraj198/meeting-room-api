@@ -20,11 +20,22 @@ class GetAvailableRoomRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
+
+    public function prepareForValidation(): void
+    {
+        if ($this->date && $this->start_time) {
+            $this->merge([
+                'full_start_datetime' => "{$this->date} {$this->start_time}"
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'date' => 'required|date_format:Y-m-d',
-            'start_time' => 'required|date_format:H:i:s|after_or_equal:today',
+            'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'start_time' => 'required|date_format:H:i:s',
+            'full_start_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:now',
             'end_time' => 'required|date_format:H:i:s|after:start_time'
         ];
     }

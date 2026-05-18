@@ -10,6 +10,7 @@ use \Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Illuminate\Http\JsonResponse;
+use \App\Http\Middleware\AuthCheckMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
         $middleware->alias([
-            'checkAuth' => \App\Http\Middleware\AuthCheckMiddleware::class
+            'checkAuth' => AuthCheckMiddleware::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
