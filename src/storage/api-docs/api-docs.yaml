@@ -192,7 +192,7 @@ paths:
             schema:
               $ref: '#/components/schemas/RoomStore'
       responses:
-        '200':
+        '201':
           description: "Room created successfully"
           content:
             application/json:
@@ -414,7 +414,7 @@ paths:
             schema:
               $ref: '#/components/schemas/BookingStore'
       responses:
-        '200':
+        '201':
           description: "Booking created successfully"
           content:
             application/json:

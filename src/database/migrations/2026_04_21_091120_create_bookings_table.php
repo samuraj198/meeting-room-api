@@ -25,10 +25,8 @@ return new class extends Migration
             $table->text('purpose')->nullable();
             $table->timestamps();
 
-            $table->index(['room_id', 'start_time', 'end_time']);
+            $table->index(['room_id', 'status', 'start_time', 'end_time']);
             $table->index(['user_id', 'status']);
-            $table->index('start_time');
-            $table->index('end_time');
         });
     }
 

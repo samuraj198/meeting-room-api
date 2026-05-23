@@ -13,8 +13,7 @@ class RoomService
     {
         $cacheKey = 'rooms.active.page.' . $page;
 
-        return Cache::tags(['rooms.active'])
-            ->remember($cacheKey, 3600, function () use ($page) {
+        return Cache::remember($cacheKey, 3600, function () use ($page) {
                 $paginator = Room::where('is_active', true)->paginate(15, ['*'], 'page', $page);
 
                 return [
@@ -24,7 +23,7 @@ class RoomService
                     'current_page' => $paginator->currentPage(),
                     'last_page' => $paginator->lastPage(),
                 ];
-            });
+        });
     }
 
     public function getAvailableRooms(string $date, string $startTime, string $endTime): Collection
@@ -34,7 +33,7 @@ class RoomService
 
         $cacheKey = 'rooms.available.' . md5($date . $startTime . $endTime);
 
-        return Cache::tags(['rooms.available'])->remember($cacheKey, 300,
+        return Cache::remember($cacheKey, 300,
             function () use ($startDateTime, $endDateTime) {
                 return Room::where('is_active', true)
                     ->whereDoesntHave('bookings', function ($query) use ($startDateTime, $endDateTime) {
@@ -48,7 +47,7 @@ class RoomService
     public function store(array $data): Room
     {
         $room = Room::create($data);
-        Cache::tags(['rooms'])->flush();
+        Cache::flush();
 
         return $room;
     }
@@ -56,7 +55,7 @@ class RoomService
     public function update(Room $room, array $data): Room
     {
         $room->update($data);
-        Cache::tags(['rooms'])->flush();
+        Cache::flush();
 
         return $room;
     }
@@ -64,7 +63,7 @@ class RoomService
     public function destroy(Room $room): bool
     {
         $del = $room->delete();
-        Cache::tags(['rooms'])->flush();
+        Cache::flush();
 
         return $del;
     }
