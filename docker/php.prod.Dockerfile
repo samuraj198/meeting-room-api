@@ -23,7 +23,7 @@ WORKDIR /var/www/html
 COPY ./src /var/www/html
 
 # Настраиваем Nginx для продакшена
-COPY ./docker/nginx/nginx-prod.conf /etc/nginx/sites-available/default
+COPY ./docker/nginx/nginx.prod.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Разрешаем PHP-FPM работать от root, чтобы избежать проблем с правами на Render
