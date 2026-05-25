@@ -34,4 +34,4 @@ RUN sed -i 's/user = www-data/user = root/g' /usr/local/etc/php-fpm.d/www.conf \
 EXPOSE 80
 
 # При старте сначала ставим зависимости в чистом окружении, сбрасываем кэш и запускаем
-CMD ["sh", "-c", "composer install --optimize-autoloader --no-dev --no-scripts && php artisan config:clear && php artisan cache:clear && php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "composer install --optimize-autoloader --no-dev --no-scripts && php artisan config:clear && php artisan cache:clear && php artisan migrate --force && php-fpm -D && nginx -g 'daemon off;'"]
