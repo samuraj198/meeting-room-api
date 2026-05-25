@@ -24,14 +24,17 @@ WORKDIR /var/www/html
 COPY ./src /var/www/html
 
 # Настраиваем Nginx для продакшена
-COPY ./docker/nginx/nginx.prod.conf /etc/nginx/sites-available/default
+COPY ./docker/nginx/nginx-prod.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Разрешаем PHP-FPM работать от root, чтобы избежать проблем с правами на Render
-RUN sed -i 's/user = www-data/user = root/g' /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i 's/group = www-data/group = root/g' /usr/local/etc/php-fpm.d/www.conf
+# Устанавливаем зависимости Laravel сразу во время сборки образа (так надежнее)
+RUN composer install --optimize-autoloader --no-dev --no-scripts --prefer-dist
+
+# Выдаем права пользователю www-data на весь проект, чтобы PHP-FPM мог писать кэш и логи
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
 
-# При старте сначала ставим зависимости в чистом окружении, сбрасываем кэш и запускаем
-CMD ["sh", "-c", "composer install --optimize-autoloader --no-dev --no-scripts --prefer-dist && php artisan migrate --force && php artisan config:clear && php artisan cache:clear && php-fpm -D && nginx -g 'daemon off;'"]
+# Команда запуска: выполняем миграции, очищаем конфигурацию и стартуем от www-data
+CMD ["sh", "-c", "php artisan migrate --force && php artisan config:clear && php artisan cache:clear && php-fpm -D && nginx -g 'daemon off;'"]
