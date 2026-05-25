@@ -27,4 +27,4 @@ RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 EXPOSE 80
 
-CMD ["sh", "-c", "composer dump-autoload --optimize --no-scripts && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache && php-fpm -D && nginx -g 'daemon off;'"]
