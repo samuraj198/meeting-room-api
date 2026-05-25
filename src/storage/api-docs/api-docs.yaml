@@ -5,6 +5,9 @@ info:
   version: 1.0.0
 servers:
   - url: 'http://localhost:8080/api'
+    description: "For local develop"
+  - url: "https://meeting-room-api-ndhw.onrender.com/api/"
+    description: "Production"
 paths:
   /register:
     post:
