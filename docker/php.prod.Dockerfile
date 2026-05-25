@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     nginx \
-    && docker-php-ext-install pdo_mysql pcntl \
+    libpq-dev \
+    && docker-php-ext-install pdo_mysql pdo_pgsql pcntl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Установка расширений Redis и PCOV
