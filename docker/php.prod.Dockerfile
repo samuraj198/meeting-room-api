@@ -27,4 +27,4 @@ RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 EXPOSE 80
 
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "composer dump-autoload --optimize && php artisan config:clear && php artisan cache:clear && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && php-fpm -D && nginx -g 'daemon off;'"]
