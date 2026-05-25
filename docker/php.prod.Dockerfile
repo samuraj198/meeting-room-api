@@ -18,7 +18,7 @@ WORKDIR /var/www/html
 
 COPY ./src /var/www/html
 
-RUN composer install --optimize-autoloader --no-dev
+RUN composer install --optimize-autoloader --no-dev --no-scripts
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
@@ -27,4 +27,4 @@ RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 EXPOSE 80
 
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php-fpm -D && nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "composer dump-autoload --optimize && php artisan package:discover && php artisan config:cache && php artisan route:cache && php-fpm -D && nginx -g 'daemon off;'"]
