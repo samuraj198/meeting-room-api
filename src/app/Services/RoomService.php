@@ -11,10 +11,18 @@ class RoomService
 {
     public function getActiveRooms(int $page): array
     {
+        $activeRoomsCount = Room::active()->count();
+
+        $totalPages = $activeRoomsCount > 15 ? (int) ceil($activeRoomsCount / 15) : 1;
+
+        if ($page > $totalPages) {
+            $page = $totalPages;
+        }
+
         $cacheKey = 'rooms.active.page.' . $page;
 
         return Cache::remember($cacheKey, 3600, function () use ($page) {
-                $paginator = Room::where('is_active', true)->paginate(15, ['*'], 'page', $page);
+                $paginator = Room::active()->paginate(15, ['*'], 'page', $page);
 
                 return [
                     'items' =>  collect($paginator->items())->toArray(),

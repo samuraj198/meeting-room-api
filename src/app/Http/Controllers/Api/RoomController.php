@@ -23,10 +23,6 @@ class RoomController extends Controller
         $page = (int) $request->input('page', 1);
         $data = $this->roomService->getActiveRooms($page);
 
-        if ($page > $data['last_page'] && $data['last_page'] > 0) {
-            $data = $this->roomService->getActiveRooms($data['last_page']);
-        }
-
         $items = Room::hydrate($data['items']);
 
         return response()->json([

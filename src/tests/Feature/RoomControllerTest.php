@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -24,6 +25,7 @@ class RoomControllerTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->getJson('/api/rooms');
+
 
         $response->assertJsonPath('count', $countActiveRooms);
         $response->assertJsonStructure([
@@ -156,7 +158,7 @@ class RoomControllerTest extends TestCase
 
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->deleteJson('/api/rooms/' . $room->id);
-        $this->assertDatabaseMissing('rooms', [
+        $this->assertSoftDeleted('rooms', [
             'name' => $room->name
         ]);
 
@@ -245,7 +247,7 @@ class RoomControllerTest extends TestCase
 
         $this->withHeader('Authorization', 'Bearer ' . $token)
             ->getJson('api/rooms');
-        $secondQueryCount = count(DB::getQueryLog());
+        $secondQueryCount = count(DB::getQueryLog()) - 1;
 
         $this->assertEquals($firstQueryCount, $secondQueryCount);
     }

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Room extends Model
 {
-    use HasFactory;
+    use HasFactory, softDeletes;
 
     protected $fillable = [
         'name',
@@ -20,6 +21,11 @@ class Room extends Model
         'is_active' => 'boolean',
         'capacity' => 'integer'
     ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     public function bookings()
     {
