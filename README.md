@@ -9,21 +9,21 @@ API для бронирования переговорных комнат. Ра�
 
 ## 🚀 Быстрый старт
 
-# Клонировать репозиторий
-git clone https://github.com/your-username/meeting-room-api.git
+### Клонировать репозиторий
+git clone https://github.com/samuraj198/meeting-room-api.git
 cd meeting-room-api
 
-# Скопировать .env
+### Скопировать .env
 cp .env.example .env
 
-# Запустить контейнеры
+### Запустить контейнеры
 docker-compose up -d
 
-# Установить зависимости
+### Установить зависимости
 docker-compose exec app composer install
 
-# Выполнить миграции и сиды
+### Выполнить миграции и сиды
 docker-compose exec app php artisan migrate --seed
 
-# Сгенерировать ключ приложения
+### Сгенерировать ключ приложения
 docker-compose exec app php artisan key:generate
