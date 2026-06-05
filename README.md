@@ -10,7 +10,7 @@ API для бронирования переговорных комнат. Ра�
 ## 🚀 Быстрый старт
 
 ### Клонировать репозиторий
-git clone https://github.com/samuraj198/meeting-room-api.git
+git clone https://github.com/samuraj198/meeting-room-api.git <br>
 cd meeting-room-api
 
 ### Скопировать .env
