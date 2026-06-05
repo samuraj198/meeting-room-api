@@ -125,3 +125,11 @@ docker-compose exec app php artisan key:generate <b>или</b> make artisan key:
 make test -> запускает все тесты (Feature) <br>
 make test-rooms -> запускает тесты для модели Room <br>
 make test-bookings -> запускает тесты для модели Booking
+
+## 🧑‍ Тестовые пользователи
+<b>После</b> make artisan -- migrate --seed <br>
+
+|     Роль     |        Email        |   Пароль   |
+|--------------|---------------------|------------|
+| Админ        | `admin@example.com` | `password` |
+| Пользователь | `user@example.com`  | `password` |
